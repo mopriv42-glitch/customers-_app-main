@@ -1,0 +1,19 @@
+{
+  "notification": {
+    "title": "New Course Available",
+    "body": "Check out our latest math course with interactive content"
+  },
+  "data": {
+    "type": "deep_link",
+    "metadata": {
+      "type": "deep_link",
+      "url": "/webview?url=https://example.com/course-details",
+      "link_type": "internal",
+      "images": [
+        "https://example.com/images/course-thumbnail-1.jpg",
+        "https://example.com/images/course-preview-1.jpg",
+        "https://example.com/images/course-preview-2.jpg"
+      ]
+    }
+  }
+}

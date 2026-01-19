@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "453900936160",
+    "project_id": "private-4t",
+    "storage_bucket": "private-4t.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453900936160:android:8598939dd58421aed9c185",
+        "android_client_info": {
+          "package_name": "com.private_4t.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "453900936160-no5kokj2vnnb4b07nbmnn9fa2evian4a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.private_4t.app",
+            "certificate_hash": "ff7e484c217a254242815ab18ed8cfb2255c4f47"
+          }
+        },
+        {
+          "client_id": "453900936160-umea146p91cut2e40p264psbifberfjr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.private_4t.app",
+            "certificate_hash": "daf2e8396d1c66a9ece00b1a37a22a9fe00c7420"
+          }
+        },
+        {
+          "client_id": "453900936160-pln8stp7ll0d3bcetptjd6uqau3eqmbc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCWujCoF7ymq1GeRASqEKGimAqtO1Vuj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "453900936160-pln8stp7ll0d3bcetptjd6uqau3eqmbc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "453900936160-u4f66pn0gig7nskjccaqluuegl8khbhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.private-4t.app",
+                "app_store_id": "6596749497"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
