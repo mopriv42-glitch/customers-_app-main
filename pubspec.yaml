@@ -1,7 +1,7 @@
 name: private_4t_app
 description: A curriculum-aligned video and tutor booking app
 publish_to: "none"
-version: 1.1.13+80
+version: 1.1.14+81
 environment:
   sdk: ">=3.3.0 <4.0.0"
 

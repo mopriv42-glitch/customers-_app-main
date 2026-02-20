@@ -67,6 +67,7 @@ class OrderCourseModel {
   final int? diagnosticId;
   final int? followUpId;
   final String? txStatus;
+  final int? school;
   final String? createdAt;
   final String? updatedAt;
 
@@ -134,6 +135,7 @@ class OrderCourseModel {
     this.transactionId,
     this.teacherName,
     this.txStatus,
+    this.school,
     this.isCompleted,
     this.diagnosticId,
     this.followUpId,
@@ -208,6 +210,7 @@ class OrderCourseModel {
       diagnosticId: json['diagnostic_id'],
       followUpId: json['follow_up_id'],
       txStatus: json['tx_status'],
+      school: json['school'],
       matrixRoomId: json['matrix_room_id'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
@@ -281,6 +284,7 @@ class OrderCourseModel {
       'booking_online': bookingOnline,
       'transaction_id': transactionId,
       'tx_status': txStatus,
+      'school': school,
       'matrix_room_id': matrixRoomId,
       'teacher_name': teacherName,
       'grade': grade?.toJson(),

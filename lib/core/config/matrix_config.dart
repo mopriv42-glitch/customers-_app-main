@@ -6,8 +6,8 @@ class MatrixConfig {
   static const String homeserver = 'https://matrix.private-4t.com';
 
   // Admin credentials for automatic user provisioning
-  static const String adminUsername = 'abdullah';
-  static const String adminPassword = 'EngAbdullah100@@';
+  static const String adminUsername = 'private-4t';
+  static const String adminPassword = 'HgINXGYU3VNPoeEPHIR1';
 
   // Default password for all provisioned users
   // This will be set for all users created/updated through the system

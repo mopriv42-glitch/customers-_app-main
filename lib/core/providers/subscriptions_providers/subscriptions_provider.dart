@@ -206,7 +206,7 @@ class SubscriptionsProvider extends ChangeNotifier {
 
         if (courses.isNotEmpty) {
           endCoursesList.clear();
-          endCoursesList.addAll(orders
+          endCoursesList.addAll(courses
               .map((e) => OrderCourseModel.fromJson(e as Map<String, dynamic>))
               .toList());
         }

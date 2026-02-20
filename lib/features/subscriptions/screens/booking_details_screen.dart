@@ -55,7 +55,9 @@ class _OrderCourseDetailScreenState extends ConsumerState<BookingDetailScreen>
   Widget build(BuildContext context) {
     final provider = ref.watch(ApiProviders.subscriptionsProvider);
     bool isLoading = provider.isLoading;
-    if (!isLoading && provider.orderCourseModel.id != null) {
+    if (!isLoading &&
+        provider.orderCourseModel.id != null &&
+        provider.orderCourseModel.id == widget.order.id) {
       _orderCourseModel = provider.orderCourseModel;
       _addressController.text = _orderCourseModel.mapAddress ?? '';
     }
