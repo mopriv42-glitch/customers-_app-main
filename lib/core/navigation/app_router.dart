@@ -203,8 +203,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/booking-details',
         builder: (context, state) {
           var order = state.extra as OrderCourseModel?;
-          order ??= OrderCourseModel(
-              id: int.tryParse(state.uri.queryParameters['id'] ?? ''));
+          if (order == null) {
+            String? idStr = state.uri.queryParameters['id'];
+            if (idStr != null && idStr.isNotEmpty) {
+              order = OrderCourseModel(id: int.tryParse(idStr));
+            } else {
+              order = OrderCourseModel(); // Empty fallback
+            }
+          }
           return BookingDetailScreen(
             order: order,
           );

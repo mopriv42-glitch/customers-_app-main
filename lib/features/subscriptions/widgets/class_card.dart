@@ -290,7 +290,7 @@ class _ClassCardState extends State<ClassCard> {
           color: context.accentSecondary,
           onTap: () => _navigateToChat(context),
         ),
-      if (widget.orderCourseModel.orderStatus == 'تم_الارسال_للمدرسين' &&
+      if (widget.orderCourseModel.orderStatus == 'تم_الارسال_للمدرسين' ||
           widget.orderCourseModel.orderStatus == 'تم_اختيار_مدرس')
         _buildActionPill(
           icon: Icons.edit,
