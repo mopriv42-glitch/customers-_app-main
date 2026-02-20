@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "890348085959",
+    "project_id": "private-4t26",
+    "storage_bucket": "private-4t26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890348085959:android:7badf0d793dd9956a354e2",
+        "android_client_info": {
+          "package_name": "com.private_4t.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr-f25Vha8GPJ_rr3mpA6kROoVqpSmde8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890348085959:android:bca734ba2d1e2ad9a354e2",
+        "android_client_info": {
+          "package_name": "com.private_4t.app.teachers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr-f25Vha8GPJ_rr3mpA6kROoVqpSmde8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
