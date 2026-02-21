@@ -28,7 +28,7 @@ class FirebaseMessagingService {
       final token = await messaging.getToken();
       if (token != null) {
         // state = state.copyWith(fcmToken: token);
-        // await _sendTokenToBackend(token);
+        await _sendTokenToBackend(token);
       }
 
       // Listen for token refresh

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:private_4t_app/app_config/api_providers.dart';
 import 'package:private_4t_app/app_config/common_components.dart';
+import 'package:private_4t_app/app_config/location_controller.dart';
 import 'package:private_4t_app/core/extensions/context_extension.dart';
 import 'package:private_4t_app/core/models/order_course_model.dart';
 import 'package:private_4t_app/core/providers/app_container.dart';
@@ -372,15 +373,45 @@ class _ClassCardState extends State<ClassCard> {
               ),
               SizedBox(height: 16.h),
 
-              // Address Field
-              TextField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'عنوانك',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  selectedAddress = value;
+              // Location Picker
+              StatefulBuilder(
+                builder: (context, setLocalState) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedAddress.isNotEmpty
+                            ? 'الموقع: تم التحديد'
+                            : 'الموقع: ${widget.orderCourseModel.mapAddress ?? "لم يتم التحديد"}',
+                        style: TextStyle(fontSize: 14.r),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 8.h),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('لوكيشن بدل عنوان'),
+                        onPressed: () async {
+                          try {
+                            final position = await LocationController.getMyLocation();
+                            final link = 'https://www.google.com/maps?q=${position.latitude},${position.longitude}';
+                            selectedAddress = link;
+                            setLocalState(() {});
+                          } catch (e) {
+                            if (context.mounted) {
+                              CommonComponents.showCustomizedSnackBar(
+                                context: context,
+                                title: 'Failed to get location',
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 40.h),
+                        ),
+                      ),
+                    ],
+                  );
                 },
               ),
               SizedBox(height: 16.h),
