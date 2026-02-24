@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,31 +145,27 @@ class _CallManagerState extends ConsumerState<CallManager> {
     debugPrint(
         "Pending navigation detected: $pendingNav, isCall: $isCallNavigation");
 
+    if (pendingNav == null || pendingNav.toString().isEmpty) {
+      return; 
+    }
+
     await NavigationQueue.setPendingCallNavigation(null);
     if (!mounted) return;
 
-    if (isCallNavigation) {
-      try {
-        final pv = PendingNavigation.fromMap(jsonDecode(pendingNav));
-        if (ref.read(ApiProviders.loginProvider).loggedUser != null) {
-          debugPrint("Fast call navigation: ${pv.path}");
-          NavigationService.navigateToHome(
-              NavigationService.rootNavigatorKey.currentContext ?? context);
-          await Future.delayed(const Duration(milliseconds: 100));
-          NavigationService.rootNavigatorKey.currentContext
-              ?.push(pv.path, extra: pv.extra);
-        } else {
-          NavigationService.navigateToHome(
-              NavigationService.rootNavigatorKey.currentContext ?? context);
-          NavigationService.rootNavigatorKey.currentContext
-              ?.push(pv.path, extra: pv.extra);
-        }
-      } catch (e) {
-        debugPrint("Error parsing call navigation: $e");
+    try {
+      final pv = PendingNavigation.fromMap(jsonDecode(pendingNav as String));
+      if (ref.read(ApiProviders.loginProvider).loggedUser != null) {
+        debugPrint("Fast navigation: ${pv.path}");
+        NavigationService.navigateToHome(
+            NavigationService.rootNavigatorKey.currentContext ?? context);
+        await Future.delayed(const Duration(milliseconds: 100));
+        NavigationService.rootNavigatorKey.currentContext
+            ?.push(pv.path, extra: pv.extra);
+      } else {
         NavigationService.rootNavigatorKey.currentContext?.go('/welcome');
       }
-    } else {
-      NavigationService.rootNavigatorKey.currentContext?.go('/welcome');
+    } catch (e) {
+      debugPrint("Error parsing pending navigation: $e");
     }
   }
 }
@@ -321,3 +317,5 @@ class CallUtils {
     return room.isDirectChat && room.summary.mJoinedMemberCount == 2;
   }
 }
+
+

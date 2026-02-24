@@ -1,3 +1,4 @@
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -28,7 +29,7 @@ class FirebaseMessagingService {
       final token = await messaging.getToken();
       if (token != null) {
         // state = state.copyWith(fcmToken: token);
-        await _sendTokenToBackend(token);
+        // await _sendTokenToBackend(token);
       }
 
       // Listen for token refresh
@@ -79,14 +80,14 @@ class FirebaseMessagingService {
 
   static Future<void> _sendTokenToBackend(String token) async {
     try {
-// Get user token
+      // Get user token
       final userToken = await CommonComponents.getSavedData(ApiKeys.userToken);
       if (userToken == null) {
         debugPrint('User token not found, cannot send FCM token');
         return;
       }
 
-// Get APNS token for iOS
+      // Get APNS token for iOS
       String? apnToken;
       if (Platform.isIOS) {
         apnToken = await FirebaseMessaging.instance.getAPNSToken();
@@ -98,8 +99,11 @@ class FirebaseMessagingService {
         if (apnToken != null) 'apn_token': apnToken,
       };
 
+      // ⚠️ نمرر context: null عمداً — لأن ApiRequests.postApiRequest
+      // عند حدوث خطأ يستدعي Navigator.pop(context) حتى لو showLoadingWidget=false
+      // وهذا يسحب الصفحة الرئيسية ويسبب شاشة سوداء
       final response = await ApiRequests.postApiRequest(
-        context: NavigationService.rootNavigatorKey.currentContext!,
+        context: null,
         baseUrl: ApiKeys.baseUrl,
         apiUrl: 'notifications/fcm-token',
         headers: {
@@ -108,11 +112,17 @@ class FirebaseMessagingService {
         },
         body: body,
         showLoadingWidget: false,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⚠️ _sendTokenToBackend timed out after 10s');
+          return null;
+        },
       );
 
       if (response != null) {
         debugPrint('FCM token sent to backend successfully');
-// Save FCM token locally
+        // Save FCM token locally
         await CommonComponents.saveData(
           key: ApiKeys.fcmToken,
           value: token,
@@ -125,6 +135,7 @@ class FirebaseMessagingService {
         }
       }
     } catch (e) {
+      // لا نريد أن نكسر تهيئة التطبيق بسبب فشل إرسال token
       debugPrint('Error sending FCM token to backend: $e');
     }
   }
@@ -147,3 +158,4 @@ class FirebaseMessagingService {
     }
   }
 }
+

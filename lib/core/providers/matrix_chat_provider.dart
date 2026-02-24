@@ -1,4 +1,5 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'dart:io';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -65,15 +66,24 @@ class MatrixChatProvider extends ChangeNotifier {
       // Prepare persistent database for the Matrix SDK
       final appDir = await getApplicationSupportDirectory();
       final dbPath = '${appDir.path}/matrix_client.sqlite';
-      final sqliteDb = await sqlite.openDatabase(dbPath);
-
-      final c = Client(
-        'Private4TChat',
-        database: await MatrixSdkDatabase.init(
-          'Private4TChat',
-          database: sqliteDb,
-        ),
-      );
+      sqlite.Database? sqliteDb;
+      try {
+        sqliteDb = await sqlite.openDatabase(dbPath).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        debugPrint('DB locked, deleting: ');
+        try { await File(dbPath).delete(); } catch (_) {}
+        sqliteDb = await sqlite.openDatabase(dbPath);
+      }
+      MatrixSdkDatabase? matrixDb;
+      try {
+        matrixDb = await MatrixSdkDatabase.init('Private4TChat', database: sqliteDb).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        debugPrint('MatrixDB failed, resetting: ');
+        try { await File(dbPath).delete(); } catch (_) {}
+        sqliteDb = await sqlite.openDatabase(dbPath);
+        matrixDb = await MatrixSdkDatabase.init('Private4TChat', database: sqliteDb);
+      }
+      final c = Client('Private4TChat', database: matrixDb);
 
       _client = c;
 
@@ -164,7 +174,7 @@ class MatrixChatProvider extends ChangeNotifier {
       await c.checkHomeserver(_homeserver).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw Exception('فشل الاتصال بالخادم: انتهت مهلة الاتصال');
+          throw Exception('ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…: Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
         },
       );
 
@@ -178,21 +188,21 @@ class MatrixChatProvider extends ChangeNotifier {
           .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          throw Exception('فشل تسجيل الدخول: انتهت مهلة الاتصال');
+          throw Exception('ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„: Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
         },
       );
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('M_FORBIDDEN')) {
-        throw Exception('خطأ: اسم المستخدم أو كلمة المرور غير صحيحة');
+        throw Exception('Ø®Ø·Ø£: Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©');
       }
       if (msg.contains('M_LIMIT_EXCEEDED')) {
-        throw Exception('عدد محاولات كبير، حاول لاحقًا');
+        throw Exception('Ø¹Ø¯Ø¯ Ù…Ø­Ø§ÙˆÙ„Ø§Øª ÙƒØ¨ÙŠØ±ØŒ Ø­Ø§ÙˆÙ„ Ù„Ø§Ø­Ù‚Ù‹Ø§');
       }
-      if (msg.contains('timeout') || msg.contains('انتهت مهلة الاتصال')) {
-        throw Exception('فشل الاتصال: تأكد من اتصال الإنترنت وحاول مرة أخرى');
+      if (msg.contains('timeout') || msg.contains('Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„')) {
+        throw Exception('ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„: ØªØ£ÙƒØ¯ Ù…Ù† Ø§ØªØµØ§Ù„ Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª ÙˆØ­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰');
       }
-      throw Exception('فشل تسجيل الدخول: $msg');
+      throw Exception('ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„: $msg');
     }
 
     _isLoggedIn = c.isLogged();
@@ -233,7 +243,7 @@ class MatrixChatProvider extends ChangeNotifier {
       await c.checkHomeserver(homeserverUri).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw Exception('فشل الاتصال بخادم Matrix: انتهت مهلة الاتصال');
+          throw Exception('ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø®Ø§Ø¯Ù… Matrix: Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
         },
       );
 
@@ -252,7 +262,7 @@ class MatrixChatProvider extends ChangeNotifier {
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          throw Exception('فشل تسجيل الدخول: انتهت مهلة الاتصال');
+          throw Exception('ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„: Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
         },
       );
 
@@ -816,3 +826,4 @@ class MatrixChatProvider extends ChangeNotifier {
     }
   }
 }
+

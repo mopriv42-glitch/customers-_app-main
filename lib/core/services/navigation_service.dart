@@ -37,6 +37,13 @@ class NavigationService {
     // احصل على الـ navigatorKey من الـ router
     _navigatorKey = router.routerDelegate.navigatorKey;
   }
+
+  @pragma('vm:entry-point')
+  static void resetKeys() {
+    _navigatorKey = GlobalKey<NavigatorState>();
+    router = null;
+    hideCallOverlay();
+  }
   static OverlayEntry? _callOverlayEntry;
   static Timer? _callOverlayTimer;
   static Offset? _callOverlayPos;

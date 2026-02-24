@@ -124,6 +124,8 @@ class NotificationService {
 
       // 3. تسجيل SendPort باسم فريد في IsolateNameServer
       //    (SendPort هو الذي يُرسل، وبالتالي يُسجل)
+      //    إزالة أي تسجيل قديم أولاً لتفادي الفشل عند إعادة التشغيل
+      IsolateNameServer.removePortNameMapping(_portName);
       IsolateNameServer.registerPortWithName(
         sendPort, // <-- استخدم sendPort هنا
         _portName, // اسم فريد
@@ -615,25 +617,30 @@ class NotificationService {
   @pragma('vm:entry-point')
   static Future<void> onNotificationCreated(
       ReceivedNotification receivedNotification) async {
-    final context = NavigationService.rootNavigatorKey.currentContext;
-    if (context != null) {
-      final newNotification =
-          local_notification_model.NotificationModel.fromJson({
-        // افتراضيات، استبدل بالقيم الفعلية من receivedNotification
-        "id": receivedNotification.id ?? DateTime.now().millisecondsSinceEpoch,
-        "title": receivedNotification.title ?? 'إشعار جديد',
-        "message": receivedNotification.body ?? '',
-        // type: NotificationType. ... // حدد النوع حسب payload أو channel
-        "isRead": false, // الإشعارات الجديدة تكون غير مقروءة
-        // استخراج البيانات الوصفية (metadata) من receivedNotification
-        // receivedNotification.payload يحتوي على البيانات الإضافية
-        "metadata": receivedNotification.payload?.cast<String, dynamic>() ?? {},
-        // يمكنك إضافة created_at إذا كانت البيانات توفرها
-        // created_at: DateTime.now(),
-      });
-      context
-          .read(ApiProviders.notificationProvider.notifier)
-          .addLocalNotification(newNotification);
+    try {
+      final context = NavigationService.rootNavigatorKey.currentContext;
+      if (context != null) {
+        final newNotification =
+            local_notification_model.NotificationModel.fromJson({
+          // افتراضيات، استبدل بالقيم الفعلية من receivedNotification
+          "id": receivedNotification.id ?? DateTime.now().millisecondsSinceEpoch,
+          "title": receivedNotification.title ?? 'إشعار جديد',
+          "message": receivedNotification.body ?? '',
+          // type: NotificationType. ... // حدد النوع حسب payload أو channel
+          "isRead": false, // الإشعارات الجديدة تكون غير مقروءة
+          // استخراج البيانات الوصفية (metadata) من receivedNotification
+          // receivedNotification.payload يحتوي على البيانات الإضافية
+          "metadata": receivedNotification.payload?.cast<String, dynamic>() ?? {},
+          // يمكنك إضافة created_at إذا كانت البيانات توفرها
+          // created_at: DateTime.now(),
+        });
+        context
+            .read(ApiProviders.notificationProvider.notifier)
+            .addLocalNotification(newNotification);
+      }
+    } catch (e, s) {
+      debugPrint('Error in onNotificationCreated: $e');
+      debugPrintStack(stackTrace: s);
     }
   }
 

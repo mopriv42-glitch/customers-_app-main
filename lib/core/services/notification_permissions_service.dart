@@ -51,8 +51,10 @@ class NotificationPermissionsService {
         statuses[Permission.phone] = await Permission.phone.request();
       }
 
-      // Request camera permission for video calls
-      statuses[Permission.ignoreBatteryOptimizations] = await Permission.ignoreBatteryOptimizations.request();
+      // DO NOT request ignoreBatteryOptimizations here automatically. 
+      // This causes a system intent to launch immediately on startup, 
+      // causing the FlutterActivity to lose focus, freeze, and result in a black screen.
+      // statuses[Permission.ignoreBatteryOptimizations] = await Permission.ignoreBatteryOptimizations.request();
 
       return statuses;
     } catch (e) {

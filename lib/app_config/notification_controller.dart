@@ -16,8 +16,6 @@ import 'package:private_4t_app/core/services/download_service.dart';
 
 class NotificationController {
   static ReceivedAction? initialAction;
-  
-  // Flag to prevent duplicate permission requests
   static bool _notificationPermissionRequested = false;
 
   /// Use this method to detect when the user taps on a notification or action button

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:private_4t_app/core/providers/notification_provider.dart';
 import 'package:private_4t_app/core/providers/call_provider.dart';
@@ -23,8 +24,16 @@ class NotificationIntegrationProvider
       await NotificationService.initializeNotifications();
       await FirebaseMessagingService.init();
 
-      // Request permissions
-      await ref.read(permissionsProvider.notifier).requestAllPermissions();
+      // await ref.read(permissionsProvider.notifier).requestAllPermissions();
+
+      // طلب الأذونات بعد 5 ثوانٍ — يعطي التطبيق وقت كافي للتهيئة
+      Future.delayed(const Duration(seconds: 5), () {
+        try {
+          ref.read(permissionsProvider.notifier).requestAllPermissions();
+        } catch (e) {
+          debugPrint('⚠️ requestAllPermissions error: $e');
+        }
+      });
 
       state = state.copyWith(
         isInitializing: false,

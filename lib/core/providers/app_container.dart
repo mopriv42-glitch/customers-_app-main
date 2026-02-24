@@ -5,12 +5,20 @@ import 'package:private_4t_app/app_config/api_providers.dart';
 import 'package:private_4t_app/core/providers/matrix_chat_provider.dart';
 
 @pragma("vm:entry-point")
-final providerAppContainer = ProviderContainer();
+var providerAppContainer = ProviderContainer();
 
 /// Helper function to dispose the container when needed (e.g., app shutdown)
 @pragma("vm:entry-point")
 void disposeAppContainer() {
   providerAppContainer.dispose();
+}
+
+@pragma("vm:entry-point")
+void resetAppContainer() {
+  try {
+    providerAppContainer.dispose();
+  } catch (_) {}
+  providerAppContainer = ProviderContainer();
 }
 
 @pragma("vm:entry-point")

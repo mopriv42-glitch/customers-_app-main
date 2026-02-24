@@ -64,13 +64,7 @@ class MyForegroundService : Service() {
     }
 
     private fun initFlutterEngine() {
-        flutterEngine = FlutterEngineCache.getInstance().get("background_engine") ?: run {
-            val engine = FlutterEngine(this)
-            engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
-            FlutterEngineCache.getInstance().put("background_engine", engine)
-            engine
-        }
-
+        flutterEngine = FlutterEngineCache.getInstance().get("background_engine")
         flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
             methodChannel = MethodChannel(messenger, METHOD_CHANNEL)
         }

@@ -73,18 +73,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Check authentication status
-    if (context.watch(ApiProviders.loginProvider).loggedUser == null) {
-      setState(() {
-        _isAuthenticated = false;
+    // Read authentication status without watching it in build to prevent infinite loops
+    final loggedUser = ref.read(ApiProviders.loginProvider).loggedUser;
+    final isAuth = loggedUser != null;
+    
+    if (_isAuthenticated != isAuth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = isAuth;
+          });
+          if (isAuth && !context.canPop()) {
+            getMatrix();
+          }
+        }
       });
-    } else {
-      if (mounted && !context.canPop()) {
-        setState(() {
-          _isAuthenticated = true;
-        });
-        getMatrix();
-      }
     }
 
     return Directionality(

@@ -48,6 +48,21 @@ import 'firebase_options.dart';
 
 String? initialDeepLinkRoute;
 
+// Required by flutter_overlay_window package.
+// This is the entry point for the second FlutterEngine that renders the overlay window.
+// Without this function, the second engine crashes with "Could not resolve main entrypoint function"
+// and its surface view covers the main app, causing a black screen.
+@pragma('vm:entry-point')
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SizedBox.shrink(),
+    ),
+  );
+}
+
 @pragma('vm:entry-point')
 Future<void> _messageHandler(RemoteMessage message) async {
   if (kIsWeb) return; // Skip on web platform
@@ -248,50 +263,64 @@ Future<void> _sendReport(String report) async {
 @pragma("vm:entry-point")
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MatrixServiceListener.startListening();
 
-  // Initialize Analytics Service
-  await AnalyticsService.instance.initialize(
-    baseUrl: ApiKeys.baseUrl,
-  );
+  // RESET GLOBALS FOR WARM RESTARTS
+  resetAppContainer();
+  NavigationService.resetKeys();
+  initialDeepLinkRoute = null;
 
-  AppStateManager().initialize();
-// PlatformDispatcher.instance.onError متوفر في Flutter 3.3+
+  // Set up error handlers immediately (synchronous, safe)
   PlatformDispatcher.instance.onError = (error, stack) {
-    // أرسل تقرير الخطأ هنا
     _reportError(error, stack);
-    return true; // تشير إلى أن الخطأ تمت معالجته
+    return true;
   };
 
-  // 2. التقاط أخطاء Flutter Framework
   FlutterError.onError = (FlutterErrorDetails details) {
-    // أرسل تقرير الخطأ هنا
-    // يمكنك التحقق مما إذا كان الخطأ فادحًا بما يكفي لتقريره
     if (kDebugMode) {
-      // في الوضع التطويري، فقط اطبع الخطأ
       FlutterError.dumpErrorToConsole(details);
     } else {
-      // في الوضع الإنتاجي، أرسل التقرير
       _reportError(details.exception, details.stack);
     }
   };
 
-  await EasyLocalization.ensureInitialized();
-  await Upgrader.clearSavedSettings();
-  await CallKitService.instance.initialize();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: Colors.red.shade900,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('APP CRASHED:', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Text(details.exceptionAsString(), style: const TextStyle(color: Colors.yellow, fontSize: 16)),
+              const SizedBox(height: 20),
+              Text(details.stack.toString(), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
 
-  if (!kIsWeb) {
-    FirebaseMessaging.onBackgroundMessage(_messageHandler);
+  // ===== PRE-RUNAPP INITIALIZATION =====
+  // Wrap ALL awaits in a master timeout to guarantee runApp() is called
+  // even if any service hangs on subsequent launches
+  try {
+    await Future.any([
+      _initializePreRunApp(),
+      Future.delayed(const Duration(seconds: 5), () {
+        debugPrint('⚠️ PRE-RUNAPP INIT TIMED OUT after 5s! Forcing runApp()...');
+      }),
+    ]);
+  } catch (e, s) {
+    debugPrint('❌ PRE-RUNAPP INIT FAILED: $e');
+    debugPrintStack(stackTrace: s);
   }
 
-  // Initialize Theme Provider
-  await providerAppContainer
-      .read(ApiProviders.themeProvider.notifier)
-      .initialize();
-
+  // ===== RUNAPP - ALWAYS REACHED =====
+  debugPrint('🟢 CALLING runApp() NOW');
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('ar'), Locale('en')],
@@ -308,26 +337,99 @@ void main() async {
     ),
   );
 
-  tz.initializeTimeZones();
-  await initializeDateFormatting('ar', null); // تهيئة اللغة العربية
+  // ===== POST-RUNAPP INITIALIZATION =====
+  // Fire-and-forget: do NOT block the event loop
+  _initializePostRunApp();
+}
 
-  debugPrint(
-    "Token: ${await CommonComponents.getSavedData(ApiKeys.userToken)}",
-  );
+/// Essential initialization that MUST complete before runApp().
+/// Only quick, critical services go here — no network calls.
+Future<void> _initializePreRunApp() async {
+  // EasyLocalization MUST be initialized first — runApp wraps in EasyLocalization widget
+  try {
+    await EasyLocalization.ensureInitialized();
+    debugPrint('✅ EasyLocalization initialized');
+  } catch (e) {
+    debugPrint('❌ EasyLocalization failed: $e');
+  }
 
-  // Initialize Performance Service
-  PerformanceService.instance.initialize();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    debugPrint('✅ Firebase initialized');
+  } catch (e) {
+    debugPrint('❌ Firebase failed: $e');
+  }
 
-  // Initialize Memory Optimization Service
-  MemoryOptimizationService.instance.initialize();
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_messageHandler);
+  }
 
-  // Initialize Network Optimization Service
-  NetworkOptimizationService.instance.initialize();
+  try {
+    await providerAppContainer
+        .read(ApiProviders.themeProvider.notifier)
+        .initialize();
+    debugPrint('✅ ThemeProvider initialized');
+  } catch (e) {
+    debugPrint('❌ ThemeProvider failed: $e');
+  }
+}
 
-  // Initialize App Optimization Service
-  await AppOptimizationService.instance.initialize();
+/// Post-runApp initialization - runs in background, never blocks UI.
+/// Non-essential services that might hang (Analytics, Matrix, Pusher) go here.
+Future<void> _initializePostRunApp() async {
+  // Non-essential services — can fail without breaking the app
+  try {
+    MatrixServiceListener.startListening();
+    debugPrint('✅ MatrixServiceListener started');
+  } catch (e) {
+    debugPrint('❌ MatrixServiceListener failed: $e');
+  }
 
-  // Initialize Pusher
+  try {
+    await AnalyticsService.instance.initialize(baseUrl: ApiKeys.baseUrl).timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => debugPrint('⚠️ AnalyticsService timed out after 3s'),
+    );
+    debugPrint('✅ AnalyticsService initialized');
+  } catch (e) {
+    debugPrint('❌ AnalyticsService failed: $e');
+  }
+
+  try {
+    AppStateManager().initialize();
+  } catch (e) {
+    debugPrint('❌ AppStateManager failed: $e');
+  }
+
+  try {
+    await CallKitService.instance.initialize().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => debugPrint('⚠️ CallKitService timed out after 3s'),
+    );
+    debugPrint('✅ CallKitService initialized');
+  } catch (e) {
+    debugPrint('❌ CallKitService failed: $e');
+  }
+
+  try {
+    tz.initializeTimeZones();
+    await initializeDateFormatting('ar', null);
+  } catch (e) {
+    debugPrint('❌ Date formatting init failed: $e');
+  }
+
+  debugPrint("Token: ${await CommonComponents.getSavedData(ApiKeys.userToken)}");
+
+  try { PerformanceService.instance.initialize(); } catch (e) { debugPrint('❌ PerformanceService: $e'); }
+  try { MemoryOptimizationService.instance.initialize(); } catch (e) { debugPrint('❌ MemoryOptimization: $e'); }
+  try { NetworkOptimizationService.instance.initialize(); } catch (e) { debugPrint('❌ NetworkOptimization: $e'); }
+
+  try {
+    await AppOptimizationService.instance.initialize();
+  } catch (e) {
+    debugPrint('❌ AppOptimizationService: $e');
+  }
+
   try {
     await PusherController.init();
   } catch (e) {
@@ -335,9 +437,13 @@ void main() async {
   }
 
   if (!kIsWeb) {
-    await providerAppContainer
-        .read(notificationIntegrationProvider.notifier)
-        .initializeAllServices();
+    try {
+      await providerAppContainer
+          .read(notificationIntegrationProvider.notifier)
+          .initializeAllServices();
+    } catch (e) {
+      debugPrint('❌ NotificationIntegration: $e');
+    }
   }
 }
 
@@ -593,6 +699,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
             },
           ),
           builder: (context, child) {
+            Widget errorCatcher = child ?? const SizedBox();
+            
             return UpgradeAlert(
               dialogStyle: (!kIsWeb && Platform.isIOS)
                   ? UpgradeDialogStyle.cupertino
@@ -615,7 +723,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                 // Show alert again after 1 day
                 debugLogging: true, // Enable debug logging
               ),
-              navigatorKey: NavigationService.rootNavigatorKey,
               child: PopScope(
                 onPopInvokedWithResult: (value, d) {
                   if (context.canPop()) {

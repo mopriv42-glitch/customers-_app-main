@@ -4,11 +4,9 @@ import 'package:private_4t_app/core/services/notification_permissions_service.da
 
 class PermissionsProvider extends StateNotifier<PermissionsState> {
   PermissionsProvider() : super(PermissionsState()) {
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    await _checkAllPermissions();
+    // لا نطلب الأذونات تلقائياً عند الإنشاء — نتركها للاستدعاء الصريح
+    // _initialize() كانت تسبب شاشة سوداء بسبب فقدان FlutterActivity للتركيز
+    // _initialize();
   }
 
   /// Check all permissions status

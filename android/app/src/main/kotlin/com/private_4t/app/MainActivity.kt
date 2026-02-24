@@ -22,10 +22,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        GeneratedPluginRegistrant.registerWith(flutterEngine)
 
-        // تخزين FlutterEngine في الخدمة
-        MyForegroundService.flutterEngine = flutterEngine
+
 
         // Main app channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -69,26 +67,6 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-
-        // Service communication channel
-      /*
-        serviceMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SERVICE_CHANNEL)
-        serviceMethodChannel?.setMethodCallHandler { call, result ->
-            when (call.method) {
-                "onServiceStarted" -> {
-                    Log.d("MainActivity", "Service started notification received")
-                    result.success(null)
-                }
-                "serviceHeartbeat" -> {
-                    Log.d("MainActivity", "Service heartbeat received")
-                    result.success(null)
-                }
-                else -> result.notImplemented()
-            }
-        }
-
-        startBackgroundService()
-       */
     }
 
     private fun minimizeApp() {
