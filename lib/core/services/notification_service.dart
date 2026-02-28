@@ -990,6 +990,10 @@ class NotificationService {
       var notification =
           message.notification?.toMap() ?? data['notification'] ?? {};
 
+      // Fallback: extract title/body directly from message.notification
+      final String? _directTitle = message.notification?.title ?? data['title']?.toString();
+      final String? _directBody = message.notification?.body ?? data['body']?.toString();
+
       debugPrint("Raw data received: ${data.toString()}"); // للتصحيح
 
       if (notification is String) {
@@ -1034,8 +1038,16 @@ class NotificationService {
           }
           break;
         case 'deep_link':
+          // Ensure notification map has title/body from direct source
+          final deepNotif = notification.cast<String, dynamic>();
+          if (deepNotif['title'] == null && _directTitle != null) {
+            deepNotif['title'] = _directTitle;
+          }
+          if (deepNotif['body'] == null && _directBody != null) {
+            deepNotif['body'] = _directBody;
+          }
           await _handleEnhancedDeepLinkNotification(
-              notification.cast<String, dynamic>(),
+              deepNotif,
               payload.cast<String, dynamic>());
           break;
         default:
@@ -1054,17 +1066,17 @@ class NotificationService {
           // إضافة النوع إلى payload
           newPayload['type'] = type;
 
-          if (notification['title'] == null && notification['body'] == null) {
+          // Use direct fallback if notification map is missing title/body
+          final title = notification['title']?.toString()
+              ?? _directTitle
+              ?? 'إشعار جديد';
+          final body = notification['body']?.toString()
+              ?? _directBody
+              ?? '';
+
+          if (title == 'إشعار جديد' && body.isEmpty) {
             return;
           }
-
-          // التأكد من أن notification يحتوي على title و body
-          final title = (notification['title'] != null)
-              ? notification['title'].toString()
-              : 'إشعار جديد';
-          final body = (notification['body'] != null)
-              ? notification['body'].toString()
-              : '';
 
           debugPrint(
               "Showing local notification: Title='$title', Body='$body', Payload=$newPayload"); // للتصحيح

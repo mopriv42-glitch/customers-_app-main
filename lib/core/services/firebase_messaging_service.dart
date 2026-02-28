@@ -28,8 +28,8 @@ class FirebaseMessagingService {
       // Get FCM token
       final token = await messaging.getToken();
       if (token != null) {
-        // state = state.copyWith(fcmToken: token);
-        // await _sendTokenToBackend(token);
+        // Send token to backend on first launch (fire-and-forget)
+        unawaited(_sendTokenToBackend(token));
       }
 
       // Listen for token refresh
@@ -87,16 +87,19 @@ class FirebaseMessagingService {
         return;
       }
 
-      // Get APNS token for iOS
+      // Get APNS token and VoIP token for iOS
       String? apnToken;
+      String? voipToken;
       if (Platform.isIOS) {
         apnToken = await FirebaseMessaging.instance.getAPNSToken();
+        voipToken = await CommonComponents.getSavedData('voip_token');
       }
 
       final body = {
         'fcm_token': token,
         'platform': Platform.isAndroid ? 'android' : 'ios',
         if (apnToken != null) 'apn_token': apnToken,
+        if (voipToken != null) 'voip_token': voipToken,
       };
 
       // ⚠️ نمرر context: null عمداً — لأن ApiRequests.postApiRequest

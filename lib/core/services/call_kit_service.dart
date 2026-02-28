@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_callkit_incoming/entities/android_params.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
 import 'package:flutter_callkit_incoming/entities/ios_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:matrix/matrix.dart' as matrix;
+import 'package:private_4t_app/app_config/api_keys.dart';
+import 'package:private_4t_app/app_config/api_requests.dart';
 import 'package:private_4t_app/app_config/common_components.dart';
 import 'package:private_4t_app/core/services/matrix_call_service.dart';
 import 'package:private_4t_app/core/services/navigation_queue.dart';
@@ -463,9 +466,56 @@ class CallKitService {
   }
 
   @pragma('vm:entry-point')
-  void _handleDevicePushTokenUpdate(CallEvent data) {
-    debugPrint('Device push token updated: ${data.body?['id']}');
-    // Handle VoIP push token updates if needed
+  void _handleDevicePushTokenUpdate(CallEvent data) async {
+    final voipToken = data.body?['deviceTokenVoIP'] ?? data.body?['id'];
+    debugPrint('VoIP push token received: $voipToken');
+
+    if (voipToken == null || voipToken.toString().isEmpty) return;
+
+    try {
+      // Save VoIP token locally
+      await CommonComponents.saveData(
+        key: 'voip_token',
+        value: voipToken.toString(),
+      );
+
+      // Send VoIP token to the server
+      final userToken = await CommonComponents.getSavedData(ApiKeys.userToken);
+      if (userToken == null) {
+        debugPrint('User token not found, cannot send VoIP token');
+        return;
+      }
+
+      final fcmToken = await CommonComponents.getSavedData(ApiKeys.fcmToken);
+
+      final body = {
+        if (fcmToken != null) 'fcm_token': fcmToken,
+        'platform': Platform.isAndroid ? 'android' : 'ios',
+        'voip_token': voipToken.toString(),
+      };
+
+      await ApiRequests.postApiRequest(
+        context: null,
+        baseUrl: ApiKeys.baseUrl,
+        apiUrl: 'notifications/fcm-token',
+        headers: {
+          'Authorization': 'Bearer $userToken',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+        showLoadingWidget: false,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('VoIP token send timed out');
+          return null;
+        },
+      );
+
+      debugPrint('VoIP token sent to server successfully');
+    } catch (e) {
+      debugPrint('Error sending VoIP token to server: $e');
+    }
   }
 
   @pragma('vm:entry-point')
