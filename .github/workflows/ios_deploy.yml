@@ -25,6 +25,9 @@ jobs:
 
       - run: bundle install
 
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+        
       - name: Deploy to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
