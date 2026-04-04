@@ -21,15 +21,16 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler-cache: true
 
-      - run: bundle install
+      - name: Install Fastlane
+        run: |
+          gem install bundler
+          gem install fastlane
 
-      - name: Install CocoaPods and run pod install
+      - name: Install CocoaPods
         run: |
           brew install cocoapods
-          echo "/opt/homebrew/bin" >> $GITHUB_PATH
-          cd ios && rm -f Podfile.lock && pod install --repo-update
+          cd ios && pod install --repo-update
 
       - name: Deploy to TestFlight
         env:
@@ -38,4 +39,4 @@ jobs:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-        run: bundle exec fastlane ios deploy
+        run: fastlane ios deploy
