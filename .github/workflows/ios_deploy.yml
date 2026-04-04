@@ -27,13 +27,13 @@ jobs:
           gem install bundler
           gem install fastlane
 
-      - name: Install CocoaPods and resolve dependencies
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
+      - name: Install CocoaPods
         run: |
           gem install cocoapods
-          cd ios
-          rm -f Podfile.lock
-          pod repo update
-          pod install
+          cd ios && rm -f Podfile.lock && pod install
 
       - name: Deploy to TestFlight
         env:
