@@ -11,23 +11,34 @@ platform :ios do
 
     match(
       type: "appstore",
-      readonly: false,
+      readonly: true,
       api_key: api_key,
       git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"]
     )
 
-    sh("flutter build ios --release --no-codesign")
+    # Update Xcode project signing settings to use match profiles
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/Runner.xcodeproj",
+      team_id: "VC5H5G22FQ",
+      bundle_identifier: "com.private-4t.app",
+      code_sign_identity: "iPhone Distribution",
+      profile_name: "match AppStore com.private-4t.app"
+    )
+
+    # Build Flutter app from project root (sh runs from fastlane/ dir by default)
+    sh("cd .. && flutter build ios --release --no-codesign")
 
     build_app(
       workspace: "ios/Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
-      xcargs: "-sdk iphoneos",
+      destination: "generic/platform=iOS",
       codesigning_identity: "iPhone Distribution",
       export_options: {
         method: "app-store",
         provisioningProfiles: {
-          "com.private_4t.app" => "match AppStore com.private_4t.app"
+          "com.private-4t.app" => "match AppStore com.private-4t.app"
         }
       }
     )
