@@ -8,18 +8,30 @@ platform :ios do
       key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
       is_key_content_base64: true
     )
+
     match(
       type: "appstore",
       readonly: false,
       api_key: api_key,
       git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"]
     )
+
     sh("flutter build ios --release --no-codesign")
+
     build_app(
       workspace: "ios/Runner.xcworkspace",
       scheme: "Runner",
-      export_method: "app-store"
+      export_method: "app-store",
+      xcargs: "-sdk iphoneos",
+      codesigning_identity: "iPhone Distribution",
+      export_options: {
+        method: "app-store",
+        provisioningProfiles: {
+          "com.private_4t.app" => "match AppStore com.private_4t.app"
+        }
+      }
     )
+
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
