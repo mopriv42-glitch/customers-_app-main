@@ -29,7 +29,10 @@ jobs:
         run: |
           brew install cocoapods
           cd ios && rm -f Podfile.lock && pod install --repo-update
-          
+
+        - name: Add Homebrew to PATH
+        run: echo "/opt/homebrew/bin" >> $GITHUB_PATH 
+         
       - name: Deploy to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
