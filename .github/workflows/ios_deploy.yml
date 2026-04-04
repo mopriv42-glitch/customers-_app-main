@@ -26,10 +26,8 @@ jobs:
       - run: bundle install
 
       - name: Install CocoaPods
-        run: |
-          brew install cocoapods
-          cd ios && pod install --repo-update
-
+        run: brew install cocoapods
+        
       - name: Deploy to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
