@@ -52,8 +52,14 @@ platform :ios do
     sh("cd .. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
 
     # ── 6. Upload to TestFlight ───────────────────────────
-    ipa_path = Dir.glob("../build/ios/ipa/*.ipa").first
-    UI.user_error!("No IPA found in build/ios/ipa/") unless ipa_path
+    # Use absolute path — relative paths break across Fastlane/Flutter contexts
+    ipa_dir = File.expand_path("../build/ios/ipa")
+    UI.message("Looking for IPA in: #{ipa_dir}")
+    sh("ls -la '#{ipa_dir}'") rescue UI.message("Could not list IPA directory")
+
+    ipa_path = Dir.glob("#{ipa_dir}/*.ipa").first
+    UI.user_error!("No IPA found in #{ipa_dir}") unless ipa_path
+    UI.success("Found IPA: #{ipa_path} (#{File.size(ipa_path) / 1024 / 1024}MB)")
 
     upload_to_testflight(
       api_key: api_key,
