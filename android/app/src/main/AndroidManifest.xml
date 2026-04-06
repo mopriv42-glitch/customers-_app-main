@@ -44,7 +44,6 @@
     
     <!-- Call permissions -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.CALL_PRIVILEGED" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     
     <application
@@ -54,17 +53,6 @@
 
         android:enableOnBackInvokedCallback="true">
 
-        <!-- Disabled: OverlayService creates a second FlutterEngine that crashes with
-             "Could not resolve main entrypoint function", causing a black screen.
-             The overlay call feature is already disabled in the Dart code. -->
-        <!--
-        <service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" 
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="explanation_for_special_use"/>
-        </service>
-        -->
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -77,29 +65,6 @@
                 android:resource="@xml/filepaths"
                 tools:replace="android:resource" />
         </provider>
-
-        <!-- Background Service for Matrix operations -->
-<!--       <service-->
-<!--           android:name=".MyForegroundService"-->
-<!--           android:enabled="true"-->
-<!--           android:exported="false"-->
-<!--           android:foregroundServiceType="specialUse">-->
-<!--           <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"-->
-<!--                android:value="Matrix background operations for messaging and calls"/>-->
-<!--       </service>-->
-
-<!--       &lt;!&ndash; Boot Receiver to start service on device restart &ndash;&gt;-->
-<!--       <receiver-->
-<!--            android:name=".BootReceiver"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="true">-->
-<!--            <intent-filter android:priority="1000">-->
-<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
-<!--                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />-->
-<!--                <action android:name="android.intent.action.PACKAGE_REPLACED" />-->
-<!--               <data android:scheme="package" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

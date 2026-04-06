@@ -26,25 +26,18 @@ platform :ios do
       profile_name: "match AppStore com.private-4t.app"
     )
 
-    # Build Flutter app from project root (sh runs from fastlane/ dir by default)
-    sh("cd .. && flutter build ios --release --no-codesign")
+    # Use flutter build ipa directly — this is the Flutter-recommended CI method.
+    # Unlike build_app (which hangs because xcode_backend.sh can't find Flutter env),
+    # flutter build ipa handles the entire Xcode build internally with proper env setup.
+    sh("cd .. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
 
-    build_app(
-      workspace: "ios/Runner.xcworkspace",
-      scheme: "Runner",
-      export_method: "app-store",
-      destination: "generic/platform=iOS",
-      codesigning_identity: "iPhone Distribution",
-      export_options: {
-        method: "app-store",
-        provisioningProfiles: {
-          "com.private-4t.app" => "match AppStore com.private-4t.app"
-        }
-      }
-    )
+    # Find and upload the built IPA
+    ipa_path = Dir.glob("../build/ios/ipa/*.ipa").first
+    UI.user_error!("No IPA found in build/ios/ipa/") unless ipa_path
 
     upload_to_testflight(
       api_key: api_key,
+      ipa: ipa_path,
       skip_waiting_for_build_processing: true
     )
   end

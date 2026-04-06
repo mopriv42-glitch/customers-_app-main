@@ -186,8 +186,15 @@ class LoginProvider extends ChangeNotifier {
     required String userName,
     required String userEmail,
   }) async {
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    final apnToken = await FirebaseMessaging.instance.getAPNSToken();
+    String? fcmToken, apnToken;
+    try {
+      fcmToken = await FirebaseMessaging.instance.getToken();
+      apnToken = await FirebaseMessaging.instance.getAPNSToken();
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace, label: e.toString());
+      fcmToken = '';
+      apnToken = '';
+    }
 
     final data = await ApiRequests.postApiRequest(
       context: context,

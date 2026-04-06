@@ -238,42 +238,8 @@ import WebRTC
     }
     
     func performRequest(parameters: [String: Any], completion: @escaping (Result<Any, Error>) -> Void) {
-        if let url = URL(string: "https://events.hiennv.com/api/logs") {
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            //Add header
-            
-            do {
-                let jsonData = try JSONSerialization.data(withJSONObject: parameters, options: [])
-                request.httpBody = jsonData
-            } catch {
-                completion(.failure(error))
-                return
-            }
-            
-            let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "mobile.app", code: 0, userInfo: [NSLocalizedDescriptionKey: "Empty data"])))
-                    return
-                }
-                
-                do {
-                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-                    completion(.success(jsonObject))
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-            task.resume()
-        } else {
-            completion(.failure(NSError(domain: "mobile.app", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
-        }
+        // Removed third-party tracking (was sending data to https://events.hiennv.com/api/logs)
+        completion(.success(["status": "ignored"]))
     }
     
 
@@ -282,7 +248,9 @@ import WebRTC
   }
 
   private func exitApp() {
-    exit(0)
+    // NOTE: Do NOT use exit(0) on iOS — Apple will REJECT your app.
+    // Apple considers exit(0) to be a crash. Instead, suspend to home screen.
+    UIControl().sendAction(#selector(URLSessionTask.suspend), to: UIApplication.shared, for: nil)
   }
 
   private func minimizeApp() {

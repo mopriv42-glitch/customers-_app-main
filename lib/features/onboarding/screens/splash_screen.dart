@@ -61,16 +61,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await _animationController.forward();
     if (!mounted) return;
     try {
-      final loginProvider = ref.read(ApiProviders.loginProvider);
-      bool isLoggedIn = false;
-      try {
-        isLoggedIn = await loginProvider.getLoggedUser()
-            .timeout(const Duration(seconds: 6));
-      } catch (e) {
-        debugPrint('getLoggedUser timeout/error: $e');
-        isLoggedIn = false;
+      // ── Fast path: check locally-stored token without network ──────────────
+      // This ensures the app navigates immediately on resume, even if offline.
+      // If a token exists we navigate to /home straight away; the home screen
+      // and providers handle 401/expired token gracefully in the background.
+      // Only if there is NO token do we know for certain the user is logged out.
+      final token = await CommonComponents.getSavedData(ApiKeys.userToken);
+      if (!mounted) return;
+
+      if (token != null) {
+        // Token present → assume logged in → go home immediately (no network wait)
+        _navigate('/home');
+        // Silently refresh user data in the background after navigation
+        final loginProvider = ref.read(ApiProviders.loginProvider);
+        loginProvider.getLoggedUser().ignore();
+      } else {
+        // No local token → definitely not logged in → go to welcome
+        _navigate('/welcome');
       }
-      _navigate(isLoggedIn ? '/home' : '/welcome');
     } catch (e) {
       debugPrint('Splash error: $e');
       _navigate('/welcome');

@@ -129,15 +129,18 @@ class DeepLinkState {
     this.error,
   });
 
+  // Sentinel object to distinguish "not passed" from "passed as null"
+  static const _sentinel = Object();
+
   DeepLinkState copyWith({
-    String? lastHandledLink,
-    String? lastLinkType,
-    String? error,
+    Object? lastHandledLink = _sentinel,
+    Object? lastLinkType = _sentinel,
+    Object? error = _sentinel,
   }) {
     return DeepLinkState(
-      lastHandledLink: lastHandledLink ?? this.lastHandledLink,
-      lastLinkType: lastLinkType ?? this.lastLinkType,
-      error: error ?? this.error,
+      lastHandledLink: identical(lastHandledLink, _sentinel) ? this.lastHandledLink : lastHandledLink as String?,
+      lastLinkType: identical(lastLinkType, _sentinel) ? this.lastLinkType : lastLinkType as String?,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 }

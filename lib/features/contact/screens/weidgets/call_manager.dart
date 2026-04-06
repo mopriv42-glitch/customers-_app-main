@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,23 +26,36 @@ class CallManager extends ConsumerStatefulWidget {
 }
 
 class _CallManagerState extends ConsumerState<CallManager> {
+  bool _matrixInitialized = false;
+
   @override
   void initState() {
+    super.initState();
+    // Handle initial notification (e.g. app opened from tap on push)
     NotificationService.handleInitialNotifications().then((_) {
       debugPrint("Initial notification handling completed");
     });
 
-    super.initState();
+    // Defer Matrix initialization to after the first frame so it never
+    // blocks the widget build cycle (which could freeze the iOS render layer).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _runMatrixInit();
+    });
+  }
+
+  Future<void> _runMatrixInit() async {
+    if (_matrixInitialized) return;
+    _matrixInitialized = true;
+
+    final matrix = ref.read(ApiProviders.matrixChatProvider);
+    final loginProvider = ref.read(ApiProviders.loginProvider);
+    final loggedUser = loginProvider.loggedUser;
+    _initMatrixIfNeeded(matrix, loginProvider, loggedUser);
   }
 
   @override
   Widget build(BuildContext context) {
     final matrix = ref.watch(ApiProviders.matrixChatProvider);
-    final loginProvider = ref.read(ApiProviders.loginProvider);
-    final loggedUser = loginProvider.loggedUser;
-
-    // Ensure user and Matrix client are initialized
-    _initMatrixIfNeeded(matrix, loginProvider, loggedUser);
 
     if (matrix.isInitialized) {
       _listenForCallEvents();

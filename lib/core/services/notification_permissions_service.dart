@@ -157,8 +157,11 @@ class NotificationPermissionsService {
   }
 
   /// Open app settings if permissions are permanently denied
-  static Future<void> openAppSettings() async {
+  static Future<void> openPermissionSettings() async {
     try {
+      // NOTE: We renamed this method from openAppSettings() to avoid
+      // infinite recursion — it was calling itself instead of the
+      // permission_handler package's openAppSettings() function.
       await openAppSettings();
     } catch (e) {
       debugPrint('Error opening app settings: $e');

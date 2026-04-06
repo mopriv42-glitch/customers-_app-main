@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>VC5H5G22FQ</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.private-4t.app</key>
+        <string>match AppStore com.private-4t.app</string>
+    </dict>
+</dict>
+</plist>

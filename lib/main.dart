@@ -73,9 +73,11 @@ Future<void> _messageHandler(RemoteMessage message) async {
     );
   } catch (_) {}
 
-  debugPrint("Background message received: ${message.messageId}");
-  debugPrint("Message data: ${message.data}");
-  debugPrint("Message notification: ${message.notification?.toMap()}");
+  if (kDebugMode) {
+    debugPrint("Background message received: ${message.messageId}");
+    debugPrint("Message data: ${message.data}");
+    debugPrint("Message notification: ${message.notification?.toMap()}");
+  }
 
   // Handle Matrix call invitations when app is terminated
   final data = message.data;
@@ -418,7 +420,7 @@ Future<void> _initializePostRunApp() async {
     debugPrint('❌ Date formatting init failed: $e');
   }
 
-  debugPrint("Token: ${await CommonComponents.getSavedData(ApiKeys.userToken)}");
+  // Token log removed — do not log auth tokens in any build mode.
 
   try { PerformanceService.instance.initialize(); } catch (e) { debugPrint('❌ PerformanceService: $e'); }
   try { MemoryOptimizationService.instance.initialize(); } catch (e) { debugPrint('❌ MemoryOptimization: $e'); }
@@ -456,6 +458,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   late StreamSubscription<PendingNavigation?> _navigationSubscription;
+  StreamSubscription<dynamic>? _incomingCallsSubscription;
 
   // Removed unused stored room id; we derive it at runtime
   @override
@@ -477,58 +480,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           _processPendingNavigation(pending);
         });
       }
-    });
-    // Token refresh will be handled by NotificationProvider
-    // Track app lifecycle to show system overlay when app minimized
-    SystemChannels.lifecycle.setMessageHandler((msg) async {
-      final calls = MatrixCallService.instance;
-
-      if (msg == AppLifecycleState.resumed.toString()) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final pending = NavigationQueue.pendingCallNavigation;
-          if (pending != null) {
-            _processPendingNavigation(pending);
-          }
-        });
-      }
-
-      if (msg == AppLifecycleState.paused.toString() ||
-          msg == AppLifecycleState.inactive.toString()) {
-        try {
-          if (calls != null) {
-            // If a call is active, ensure system overlay is visible
-            String? roomId = calls.anyActiveRoomId;
-            if (roomId == null) {
-              final ctx = NavigationService.rootNavigatorKey.currentContext;
-              if (ctx != null) {
-                final state = GoRouterState.of(ctx);
-                final loc = state.uri.toString();
-                final match = RegExp(r"^/call/(.+)").firstMatch(loc);
-                if (match != null) roomId = match.group(1);
-              }
-            }
-            if (roomId != null) {
-              final ctx2 = NavigationService.rootNavigatorKey.currentContext;
-              // In-app overlay (if app still has UI)
-              if (ctx2 != null) {
-                // NavigationService.showCallOverlay(ctx2, roomId);
-              }
-              // Ensure Android system overlay floats above other apps
-              // await NavigationService.ensureSystemOverlay(roomId);
-            }
-          }
-        } catch (_) {}
-      }
-
-      try {
-        if (calls != null) {
-          if (!calls.hasActiveCall) {
-            NavigationService.hideCallOverlay();
-          }
-        }
-      } catch (_) {}
-
-      return null;
     });
   }
 
@@ -563,8 +514,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           properties: {'timestamp': DateTime.now().toIso8601String()},
           screen: 'App',
         );
-        // Clean up overlays when app is paused or detached
-        NavigationService.hideCallOverlay();
+        // NOTE: Do NOT call hideCallOverlay() or any async platform-channel call
+        // here on iOS. Calling FlutterOverlayWindow.closeOverlay() during the
+        // paused phase interrupts iOS's view-layer suspension and corrupts the
+        // rendering pipeline, causing a black screen on the next foreground.
         break;
       case AppLifecycleState.detached:
         AnalyticsService.instance.logEvent(
@@ -607,6 +560,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
     WidgetsBinding.instance.removeObserver(this);
     _navigationSubscription.cancel();
+    _incomingCallsSubscription?.cancel();
     NavigationQueue.dispose();
     super.dispose();
   }
@@ -627,49 +581,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
-
-      final calls = ref.watch(ApiProviders.matrixChatProvider).calls;
-      calls?.incomingCalls.listen((inc) {
-        // SystemSound.play(SystemSoundType.alert);
-        // MatrixNotificationsBridge.showIncomingCall(inc);
-        //   CallKitService.instance.showIncomingCall(
-        //     callerName: inc.room.getLocalizedDisplayname(),
-        //     callerId: inc.callId,
-        //     roomId: inc.room.id,
-        //     callId: inc.callId,
-        //     offer: inc.offer,
-        //   );
-        /*showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: const Text('مكالمة واردة'),
-          content: Text('من غرفة: ${inc.room.getLocalizedDisplayname()}'),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await calls.declineIncomingCall(inc.callId);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('رفض'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await calls.acceptIncomingCall(inc.room.id, inc.callId);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                }
-                if (!mounted) return;
-                NavigationService.navigateToCall(context, inc.room.id);
-              },
-              child: const Text('رد'),
-            ),
-          ],
-        ),
-      );*/
-      });
     }
 
     return AnalyticsGlobalListener(
@@ -680,8 +591,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         // iPhone X design size
         minTextAdapt: true,
         splitScreenMode: true,
-        useInheritedMediaQuery: true,
-        // Performance optimization
+        // NOTE: useInheritedMediaQuery is deprecated in flutter_screenutil and
+        // causes MediaQuery state conflicts on iOS engine restart (resume after
+        // background), which can contribute to black screen on foreground.
         builder: (context, child) => MaterialApp.router(
           title: Constants.appName,
           debugShowCheckedModeBanner: false,
@@ -717,18 +629,15 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                 countryCode: "SA",
                 // Changed to Saudi Arabia
                 languageCode: 'ar',
-                minAppVersion: "1.1.4",
-                // Updated to current version
+                minAppVersion: "1.1.18",
                 durationUntilAlertAgain: const Duration(days: 1),
                 // Show alert again after 1 day
                 debugLogging: true, // Enable debug logging
               ),
               child: PopScope(
-                onPopInvokedWithResult: (value, d) {
-                  if (context.canPop()) {
-                    context.pop();
-                  }
-                },
+                // onPopInvokedWithResult fires AFTER the pop has already been handled.
+                // Do NOT call context.pop() here — it would cause double navigation.
+                onPopInvokedWithResult: (value, d) {},
                 child: Stack(
                   children: [const CallManager(), if (child != null) child],
                 ),

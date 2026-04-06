@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -40,7 +41,7 @@ class ApiRequests {
             "X-Cart-Token":
                 "${await CommonComponents.getSavedData(ApiKeys.userCartToken)}"
           }..addAll(headers),
-        );
+        ).timeout(const Duration(seconds: 30));
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           if (context != null && context.mounted) {
@@ -66,13 +67,13 @@ class ApiRequests {
       }
     } on TimeoutException catch (error) {
       if (context != null && context.mounted) {
-        Navigator.pop(context);
+        if (showLoadingWidget) Navigator.pop(context);
         await CommonComponents.timeOutExceptionAlert(context);
       }
       debugPrint("Time Out Exception is::=>$error");
     } on SocketException catch (error) {
       if (context != null && context.mounted) {
-        Navigator.pop(context);
+        if (showLoadingWidget) Navigator.pop(context);
       }
       debugPrint("Socket Exception is::=>$error");
       if (context != null && context.mounted) {
@@ -80,7 +81,7 @@ class ApiRequests {
       }
     } catch (error, s) {
       if (context != null && context.mounted) {
-        Navigator.pop(context);
+        if (showLoadingWidget) Navigator.pop(context);
       }
       debugPrintStack(label: "General Exception is::=> $error", stackTrace: s);
     }
@@ -107,10 +108,10 @@ class ApiRequests {
             "X-Cart-Token":
                 "${await CommonComponents.getSavedData(ApiKeys.userCartToken)}"
           }..addAll(headers),
-        );
+        ).timeout(const Duration(seconds: 30));
 
         if (response.statusCode == 200) {
-          debugPrint(response.body);
+          if (kDebugMode) debugPrint(response.body);
           var successDecodedData = jsonDecode(response.body);
 
           return successDecodedData;
@@ -167,7 +168,7 @@ class ApiRequests {
                   "Bearer ${await CommonComponents.getSavedData(ApiKeys.userToken)}"
             },
             body: body,
-          );
+          ).timeout(const Duration(seconds: 30));
 
           if (response.statusCode == 200 || response.statusCode == 201) {
             if (context.mounted) {
@@ -241,7 +242,7 @@ class ApiRequests {
                     "Accept-Language": "ar",
                     "X-Cart-Token":
                         "${await CommonComponents.getSavedData(ApiKeys.userCartToken)}"
-                  }..addAll(headers));
+                  }..addAll(headers)).timeout(const Duration(seconds: 30));
           if (response.statusCode == 200 || response.statusCode == 201) {
             if (context.mounted) {
               if (showLoadingWidget) Navigator.pop(context);

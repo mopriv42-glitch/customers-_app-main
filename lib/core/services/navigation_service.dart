@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
@@ -42,7 +43,9 @@ class NavigationService {
   static void resetKeys() {
     _navigatorKey = GlobalKey<NavigatorState>();
     router = null;
-    hideCallOverlay();
+    // NOTE: Do NOT call hideCallOverlay() here — resetKeys() runs BEFORE runApp(),
+    // and on iOS, sending platform channel messages before the engine is ready
+    // corrupts the rendering pipeline and causes the black screen.
   }
   static OverlayEntry? _callOverlayEntry;
   static Timer? _callOverlayTimer;
@@ -261,6 +264,8 @@ class NavigationService {
   static bool _permissionRequested = false;
 
   static Future<void> _ensureSystemOverlay(String roomId) async {
+    // FlutterOverlayWindow is Android-only — skip entirely on iOS
+    if (!Platform.isAndroid) return;
     try {
       final canDraw = await FlutterOverlayWindow.isPermissionGranted();
       if (!canDraw && !_permissionRequested) {
@@ -292,6 +297,8 @@ class NavigationService {
   }
 
   static Future<void> _closeSystemOverlay() async {
+    // FlutterOverlayWindow is Android-only — skip entirely on iOS
+    if (!Platform.isAndroid) return;
     try {
       await FlutterOverlayWindow.closeOverlay();
     } catch (e) {
