@@ -6,6 +6,7 @@ on:
 jobs:
   deploy:
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -17,29 +18,42 @@ jobs:
         run: |
           xcodebuild -version
           xcodebuild -showsdks | grep -i ios
-          xcrun simctl list runtimes || true
 
+      # ── Flutter (cached) ──────────────────────────────────
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
+          cache: true
+
+      - name: Flutter pub cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-
 
       - run: flutter pub get
 
+      # ── Ruby & Gems (cached) ──────────────────────────────
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
+          bundler-cache: true
 
-      - name: Install Fastlane
-        run: |
-          gem install bundler
-          gem install fastlane
+      # ── CocoaPods (cached) ────────────────────────────────
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-
 
       - name: Install CocoaPods
-        run: |
-          gem install cocoapods
-          cd ios && rm -f Podfile.lock && pod install
+        run: cd ios && pod install --deployment
 
+      # ── Build & Deploy ────────────────────────────────────
       - name: Deploy to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
