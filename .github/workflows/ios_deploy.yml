@@ -55,11 +55,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ios/Pods
-          key: pods-${{ hashFiles('ios/Podfile', 'ios/Podfile.lock', 'pubspec.lock') }}
+          key: pods-${{ hashFiles('ios/Podfile', 'pubspec.lock') }}
           restore-keys: pods-
 
       - name: Install CocoaPods
-        run: cd ios && bundle exec pod install
+        run: cd ios && bundle exec pod install --repo-update
 
       # ── Build & Deploy ────────────────────────────────────
       - name: Deploy to TestFlight
