@@ -52,14 +52,27 @@ platform :ios do
     sh("cd .. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
 
     # ── 6. Upload to TestFlight ───────────────────────────
-    # Use absolute path — relative paths break across Fastlane/Flutter contexts
-    ipa_dir = File.expand_path("../build/ios/ipa")
+    # __dir__ = fastlane/ folder. ../build/ios/ipa = project_root/build/ios/ipa
+    ipa_dir = File.expand_path("../build/ios/ipa", __dir__)
     UI.message("Looking for IPA in: #{ipa_dir}")
-    sh("ls -la '#{ipa_dir}'") rescue UI.message("Could not list IPA directory")
+
+    # Diagnostic: show what's actually in the IPA directory
+    sh("ls -la '#{ipa_dir}' 2>/dev/null || echo 'Directory not found: #{ipa_dir}'")
+
+    # Also search broadly in case the path is different
+    sh("find #{File.expand_path('..', __dir__)} -name '*.ipa' -type f 2>/dev/null || echo 'No IPA files found anywhere'")
 
     ipa_path = Dir.glob("#{ipa_dir}/*.ipa").first
-    UI.user_error!("No IPA found in #{ipa_dir}") unless ipa_path
-    UI.success("Found IPA: #{ipa_path} (#{File.size(ipa_path) / 1024 / 1024}MB)")
+
+    # Fallback: search the entire build directory
+    if ipa_path.nil?
+      UI.message("IPA not found in expected dir, searching build/ tree...")
+      build_root = File.expand_path("../build", __dir__)
+      ipa_path = Dir.glob("#{build_root}/**/*.ipa").first
+    end
+
+    UI.user_error!("No IPA found! Searched: #{ipa_dir}") unless ipa_path
+    UI.success("Uploading IPA: #{ipa_path} (#{File.size(ipa_path) / 1024 / 1024}MB)")
 
     upload_to_testflight(
       api_key: api_key,
