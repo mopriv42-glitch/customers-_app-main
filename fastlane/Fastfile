@@ -2,6 +2,7 @@ default_platform(:ios)
 
 platform :ios do
   lane :deploy do
+    # ── 1. App Store Connect API Key ──────────────────────
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
       issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
@@ -9,14 +10,34 @@ platform :ios do
       is_key_content_base64: true
     )
 
+    # ── 2. Create CI Keychain ─────────────────────────────
+    # GitHub Actions runners don't have a usable keychain.
+    # We must create a temporary one so Match can import certificates.
+    keychain_name = "ci_build_keychain"
+    keychain_password = ENV["MATCH_PASSWORD"] || "ci_temp_password"
+
+    delete_keychain(name: keychain_name) if File.exist?(File.expand_path("~/Library/Keychains/#{keychain_name}-db"))
+
+    create_keychain(
+      name: keychain_name,
+      password: keychain_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 7200,
+      lock_when_sleeps: false
+    )
+
+    # ── 3. Match (code signing) ───────────────────────────
     match(
       type: "appstore",
       readonly: true,
       api_key: api_key,
-      git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"]
+      git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"],
+      keychain_name: keychain_name,
+      keychain_password: keychain_password
     )
 
-    # Update Xcode project signing settings to use match profiles
+    # ── 4. Update Xcode signing settings ──────────────────
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/Runner.xcodeproj",
@@ -26,12 +47,11 @@ platform :ios do
       profile_name: "match AppStore com.private-4t.app"
     )
 
-    # Use flutter build ipa directly — this is the Flutter-recommended CI method.
-    # Unlike build_app (which hangs because xcode_backend.sh can't find Flutter env),
-    # flutter build ipa handles the entire Xcode build internally with proper env setup.
+    # ── 5. Build IPA ──────────────────────────────────────
+    # flutter build ipa handles xcodebuild internally with proper Flutter env.
     sh("cd .. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
 
-    # Find and upload the built IPA
+    # ── 6. Upload to TestFlight ───────────────────────────
     ipa_path = Dir.glob("../build/ios/ipa/*.ipa").first
     UI.user_error!("No IPA found in build/ios/ipa/") unless ipa_path
 
@@ -40,5 +60,8 @@ platform :ios do
       ipa: ipa_path,
       skip_waiting_for_build_processing: true
     )
+
+    # ── 7. Cleanup ────────────────────────────────────────
+    delete_keychain(name: keychain_name) if File.exist?(File.expand_path("~/Library/Keychains/#{keychain_name}-db"))
   end
 end
