@@ -51,7 +51,7 @@ jobs:
           restore-keys: pods-
 
       - name: Install CocoaPods
-        run: cd ios && pod install --deployment
+        run: cd ios && pod install
 
       # ── Build & Deploy ────────────────────────────────────
       - name: Deploy to TestFlight
