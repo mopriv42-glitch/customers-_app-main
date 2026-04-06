@@ -51,7 +51,7 @@ jobs:
           restore-keys: pods-
 
       - name: Install CocoaPods
-        run: cd ios && rm -f Podfile.lock && pod install
+        run: cd ios && rm -f Podfile.lock && bundle exec pod install
 
       # ── Build & Deploy ────────────────────────────────────
       - name: Deploy to TestFlight
@@ -61,4 +61,4 @@ jobs:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-        run: fastlane ios deploy
+        run: bundle exec fastlane ios deploy
